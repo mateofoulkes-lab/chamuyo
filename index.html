@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chamuyo — Test Frontend</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#7ad7ff" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <div>
+        <h1>Chamuyo</h1>
+        <p class="muted">Frontend de prueba (GitHub Pages ⇄ InfinityFree)</p>
+      </div>
+      <div class="pill" id="netPill">…</div>
+    </header>
+
+    <section class="card">
+      <h2>Config</h2>
+      <label class="row">
+        <span>Backend URL</span>
+        <input id="apiBase" type="text" spellcheck="false" />
+      </label>
+      <div class="row">
+        <button id="btnPing" class="btn">Probar roomState (sin sala)</button>
+        <button id="btnClear" class="btn ghost">Limpiar log</button>
+      </div>
+      <p class="muted small">Tip: el backend debe permitir CORS desde <code>https://mateofoulkes.github.io</code>.</p>
+    </section>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Crear sala</h2>
+        <label class="row">
+          <span>Nombre</span>
+          <input id="hostName" type="text" placeholder="Mateo" />
+        </label>
+        <button id="btnCreate" class="btn">Crear sala</button>
+        <p class="muted small">Esto debería devolverte <code>roomCode</code> y <code>playerToken</code>.</p>
+      </section>
+
+      <section class="card">
+        <h2>Unirse a sala</h2>
+        <label class="row">
+          <span>Código</span>
+          <input id="joinCode" type="text" placeholder="ABC123" />
+        </label>
+        <label class="row">
+          <span>Nombre</span>
+          <input id="joinName" type="text" placeholder="Invitado" />
+        </label>
+        <button id="btnJoin" class="btn">Unirme</button>
+      </section>
+    </section>
+
+    <section class="card">
+      <h2>Sala actual</h2>
+      <div class="row">
+        <button id="btnRoomState" class="btn">Traer roomState</button>
+        <button id="btnMyHand" class="btn">Traer mi mano</button>
+      </div>
+
+      <div class="row">
+        <label class="row inline">
+          <span>Room code</span>
+          <input id="curRoomCode" type="text" placeholder="(vacío)" />
+        </label>
+        <label class="row inline">
+          <span>Bearer token</span>
+          <input id="curToken" type="text" placeholder="(vacío)" />
+        </label>
+      </div>
+
+      <div class="row">
+        <button id="btnStart" class="btn warn">Start game</button>
+      </div>
+
+      <div class="split">
+        <div>
+          <h3>Players</h3>
+          <ul id="players" class="list"></ul>
+        </div>
+        <div>
+          <h3>Lists</h3>
+          <ul id="lists" class="list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Log</h2>
+      <pre id="log" class="log"></pre>
+    </section>
+
+    <footer class="foot muted small">
+      <span id="build"></span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
