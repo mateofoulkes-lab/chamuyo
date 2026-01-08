@@ -34,13 +34,28 @@ async function api(action, { method="GET", body=null, auth=false, query={} } = {
   url.searchParams.set("action", action);
   for (const [k,v] of Object.entries(query)) url.searchParams.set(k, v);
 
-  const headers = { "Content-Type": "application/json" };
-  if (auth) headers["Authorization"] = `Bearer ${state.token}`;
+  // Para evitar preflight:
+  // - en GET no mandamos headers custom
+  // - en POST mandamos x-www-form-urlencoded
+  const headers = {};
+  let fetchBody = null;
+
+  if (method !== "GET") {
+    const params = new URLSearchParams();
+    if (auth) params.set("token", state.token); // sin Authorization header
+    if (body && typeof body === "object") {
+      for (const [k,v] of Object.entries(body)) {
+        params.set(k, typeof v === "string" ? v : JSON.stringify(v));
+      }
+    }
+    headers["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";
+    fetchBody = params.toString();
+  }
 
   const res = await fetch(url.toString(), {
     method,
     headers,
-    body: body ? JSON.stringify(body) : null,
+    body: fetchBody
   });
 
   let data;
@@ -49,6 +64,7 @@ async function api(action, { method="GET", body=null, auth=false, query={} } = {
 
   return { status: res.status, data };
 }
+
 
 function renderPlayers(players) {
   const ul = $("players");
