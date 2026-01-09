@@ -1,105 +1,63 @@
 <!doctype html>
-<html lang="es-AR">
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Chamuyo — Test Frontend</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#7ad7ff" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <title>Test conexión GitHub Pages → InfinityFree</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 2rem;
+    }
+    pre {
+      background: #222;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .ok { color: #4cff88; }
+    .err { color: #ff5c5c; }
+  </style>
 </head>
 <body>
-  <main class="wrap">
-    <header class="head">
-      <div>
-        <h1>Chamuyo</h1>
-        <p class="muted">Frontend de prueba (GitHub Pages ⇄ InfinityFree)</p>
-      </div>
-      <div class="pill" id="netPill">…</div>
-    </header>
 
-    <section class="card">
-      <h2>Config</h2>
-      <label class="row">
-        <span>Backend URL</span>
-        <input id="apiBase" type="text" spellcheck="false" />
-      </label>
-      <div class="row">
-        <button id="btnPing" class="btn">Probar roomState (sin sala)</button>
-        <button id="btnClear" class="btn ghost">Limpiar log</button>
-      </div>
-      <p class="muted small">Tip: el backend debe permitir CORS desde <code>https://mateofoulkes-lab.github.io</code>.</p>
-    </section>
+<h1>Test conexión API</h1>
+<button id="btn">Probar conexión</button>
 
-    <section class="grid">
-      <section class="card">
-        <h2>Crear sala</h2>
-        <label class="row">
-          <span>Nombre</span>
-          <input id="hostName" type="text" placeholder="Mateo" />
-        </label>
-        <button id="btnCreate" class="btn">Crear sala</button>
-        <p class="muted small">Esto debería devolverte <code>roomCode</code> y <code>playerToken</code>.</p>
-      </section>
+<pre id="out">Esperando…</pre>
 
-      <section class="card">
-        <h2>Unirse a sala</h2>
-        <label class="row">
-          <span>Código</span>
-          <input id="joinCode" type="text" placeholder="ABC123" />
-        </label>
-        <label class="row">
-          <span>Nombre</span>
-          <input id="joinName" type="text" placeholder="Invitado" />
-        </label>
-        <button id="btnJoin" class="btn">Unirme</button>
-      </section>
-    </section>
+<script>
+const API_URL = "https://TU-SITIO.infinityfreeapp.com/test_api.php";
 
-    <section class="card">
-      <h2>Sala actual</h2>
-      <div class="row">
-        <button id="btnRoomState" class="btn">Traer roomState</button>
-        <button id="btnMyHand" class="btn">Traer mi mano</button>
-      </div>
+const out = document.getElementById("out");
+const btn = document.getElementById("btn");
 
-      <div class="row">
-        <label class="row inline">
-          <span>Room code</span>
-          <input id="curRoomCode" type="text" placeholder="(vacío)" />
-        </label>
-        <label class="row inline">
-          <span>Bearer token</span>
-          <input id="curToken" type="text" placeholder="(vacío)" />
-        </label>
-      </div>
+btn.onclick = async () => {
+  out.textContent = "Conectando…";
 
-      <div class="row">
-        <button id="btnStart" class="btn warn">Start game</button>
-      </div>
+  try {
+    const res = await fetch(API_URL, {
+      method: "GET",
+    });
 
-      <div class="split">
-        <div>
-          <h3>Players</h3>
-          <ul id="players" class="list"></ul>
-        </div>
-        <div>
-          <h3>Lists</h3>
-          <ul id="lists" class="list"></ul>
-        </div>
-      </div>
-    </section>
+    out.textContent =
+      "HTTP STATUS: " + res.status + "\n\n";
 
-    <section class="card">
-      <h2>Log</h2>
-      <pre id="log" class="log"></pre>
-    </section>
+    const text = await res.text();
+    out.textContent += text;
 
-    <footer class="foot muted small">
-      <span id="build"></span>
-    </footer>
-  </main>
+    out.className = "ok";
+  } catch (err) {
+    out.textContent =
+      "ERROR DE FETCH\n\n" +
+      err.name + "\n" +
+      err.message;
 
-  <script src="app.js"></script>
+    out.className = "err";
+  }
+};
+</script>
+
 </body>
 </html>
