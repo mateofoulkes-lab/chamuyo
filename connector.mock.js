@@ -19,6 +19,7 @@ const state = {
   players: new Map(),        // token -> player
   phrases: [],
   decks: [],
+  pendingPlayers: new Map(), // token -> { roomCode, name, status, requestId }
 };
 
 async function ensureData(){
@@ -61,6 +62,19 @@ function pushEvent(room, type, payload={}){
   room.events.push({ id: room.events.length+1, type, created_at: nowIso(), payload: clone(payload) });
   // keep last 50
   if(room.events.length>50) room.events.splice(0, room.events.length-50);
+}
+
+function addRequest(room, type, payload){
+  const req = { id: room.nextRequestId++, type, status: "pending", created_at: nowIso(), payload: clone(payload) };
+  room.requests.push(req);
+  return req;
+}
+
+function findRequest(room, requestId){
+  const req = room.requests.find(r => r.id === Number(requestId));
+  if(!req) throw new Error("Solicitud no encontrada");
+  if(req.status !== "pending") throw new Error("Solicitud ya resuelta");
+  return req;
 }
 
 function dealOne(room, playerId){
@@ -123,6 +137,8 @@ export async function createRoom(name, { deckId="classic" } = {}){
     usedPhraseIds: new Set(),
     nextPlayerId: 1,
     nextCardId: 1,
+    nextRequestId: 1,
+    requests: [],
   };
 
   // host player
@@ -135,17 +151,17 @@ export async function createRoom(name, { deckId="classic" } = {}){
   state.rooms.set(code, room);
   pushEvent(room, "room_created", { host: host.name, deckId });
 
-  return { ok:true, roomCode: code, playerToken: token };
+  return { ok:true, roomCode: code, playerToken: token, playerId: host.id };
 }
 
 export async function joinRoom(code, name){
   const room = ensureRoom(code.toUpperCase().trim());
   const token = randToken();
-  const p = { id: room.nextPlayerId++, roomCode: room.code, name: name?.trim() || "Invitado", token, created_at: nowIso(), isHost:false };
-  room.players.push({ id: p.id, name: p.name, isHost:false });
-  state.players.set(token, p);
-  pushEvent(room, "player_joined", { name: p.name });
-  return { ok:true, roomCode: room.code, playerToken: token };
+  const playerName = name?.trim() || "Invitado";
+  const req = addRequest(room, "join", { name: playerName, token });
+  state.pendingPlayers.set(token, { roomCode: room.code, name: playerName, status: "pending", requestId: req.id });
+  pushEvent(room, "join_requested", { name: playerName });
+  return { ok:true, roomCode: room.code, playerToken: token, status: "pending" };
 }
 
 export async function getRoomState(code){
@@ -156,6 +172,16 @@ export async function getRoomState(code){
     players: clone(room.players),
     events: clone(room.events.slice(-10)),
   };
+}
+
+export async function getJoinStatus(token){
+  const active = state.players.get(token);
+  if(active){
+    return { ok:true, status: "active", roomCode: active.roomCode };
+  }
+  const pending = state.pendingPlayers.get(token);
+  if(!pending) return { ok:true, status: "unknown" };
+  return { ok:true, status: pending.status, roomCode: pending.roomCode };
 }
 
 export async function startGame(token){
@@ -215,6 +241,10 @@ export async function markVoided(token, cardId){
   c.state = "voided";
   c.resolved_at = nowIso();
   pushEvent(room, "card_voided", { player: me.name, cardId: c.cardId });
+  const newCard = dealOne(room, me.id);
+  if(newCard){
+    pushEvent(room, "card_replaced", { player: me.name, cardId: newCard.cardId });
+  }
   return { ok:true };
 }
 
@@ -233,4 +263,144 @@ export async function getNewCard(token){
 export async function listDecks(){
   await ensureData();
   return { ok:true, decks: state.decks.map(d=>({ id:d.id, title:d.title, subtitle:d.subtitle })) };
+}
+
+export async function listRequests(token){
+  const me = ensureMe(token);
+  const room = ensureRoom(me.roomCode);
+  if(me.id !== room.hostPlayerId) throw new Error("Solo el anfitrión puede ver notificaciones");
+  return { ok:true, requests: clone(room.requests.filter(r=>r.status==="pending")) };
+}
+
+export async function requestCardSwap(token, cardId, reason){
+  const me = ensureMe(token);
+  const room = ensureRoom(me.roomCode);
+  const c = room.cards.get(Number(cardId));
+  if(!c || c.playerId!==me.id) throw new Error("Carta inválida");
+  const phr = state.phrases.find(p=>p.id===c.phraseId);
+  const req = addRequest(room, "swap", {
+    playerName: me.name,
+    playerId: me.id,
+    cardId: c.cardId,
+    phrase: phr?.text || "...",
+    reason: reason?.trim() || "Sin aclaración",
+  });
+  pushEvent(room, "swap_requested", { player: me.name, phrase: req.payload.phrase });
+  return { ok:true, requestId: req.id };
+}
+
+export async function respondCardSwap(token, requestId, accept){
+  await ensureData();
+  const me = ensureMe(token);
+  const room = ensureRoom(me.roomCode);
+  if(me.id !== room.hostPlayerId) throw new Error("Solo el anfitrión puede resolver");
+  const req = findRequest(room, requestId);
+  if(req.type !== "swap") throw new Error("Solicitud inválida");
+  req.status = "handled";
+  if(accept){
+    const card = room.cards.get(Number(req.payload.cardId));
+    if(card){
+      card.state = "voided";
+      card.resolved_at = nowIso();
+    }
+    if(req.payload.playerId){
+      dealOne(room, req.payload.playerId);
+    }
+    pushEvent(room, "swap_accepted", { player: req.payload.playerName, phrase: req.payload.phrase });
+  }else{
+    pushEvent(room, "swap_rejected", { player: req.payload.playerName, phrase: req.payload.phrase });
+  }
+  return { ok:true };
+}
+
+export async function requestAccusation(token, accusedPlayerId, reason){
+  const me = ensureMe(token);
+  const room = ensureRoom(me.roomCode);
+  const accused = room.players.find(p=>p.id===Number(accusedPlayerId));
+  if(!accused) throw new Error("Jugador inválido");
+  const req = addRequest(room, "accusation", {
+    playerName: me.name,
+    accusedId: accused.id,
+    accusedName: accused.name,
+    reason: reason?.trim() || "Sin aclaración",
+  });
+  pushEvent(room, "accusation_requested", { player: me.name, accused: accused.name });
+  return { ok:true, requestId: req.id };
+}
+
+export async function respondAccusation(token, requestId, action){
+  await ensureData();
+  const me = ensureMe(token);
+  const room = ensureRoom(me.roomCode);
+  if(me.id !== room.hostPlayerId) throw new Error("Solo el anfitrión puede resolver");
+  const req = findRequest(room, requestId);
+  if(req.type !== "accusation") throw new Error("Solicitud inválida");
+  req.status = "handled";
+  if(action === "penalize"){
+    dealOne(room, req.payload.accusedId);
+    pushEvent(room, "accusation_penalized", { player: req.payload.playerName, accused: req.payload.accusedName });
+  }else{
+    pushEvent(room, "accusation_dismissed", { player: req.payload.playerName, accused: req.payload.accusedName });
+  }
+  return { ok:true };
+}
+
+export async function respondJoinRequest(token, requestId, mode, replacePlayerId){
+  await ensureData();
+  const me = ensureMe(token);
+  const room = ensureRoom(me.roomCode);
+  if(me.id !== room.hostPlayerId) throw new Error("Solo el anfitrión puede resolver");
+  const req = findRequest(room, requestId);
+  if(req.type !== "join") throw new Error("Solicitud inválida");
+  const pending = state.pendingPlayers.get(req.payload.token);
+  if(!pending) throw new Error("Solicitud expirada");
+  req.status = "handled";
+
+  if(mode === "reject"){
+    pending.status = "rejected";
+    pushEvent(room, "join_rejected", { name: pending.name });
+    return { ok:true };
+  }
+
+  if(mode === "replace"){
+    const target = room.players.find(p=>p.id===Number(replacePlayerId));
+    if(!target) throw new Error("Jugador a reemplazar inválido");
+    target.name = pending.name;
+    for(const [tok, pl] of state.players.entries()){
+      if(pl.id === target.id && pl.roomCode === room.code){
+        state.players.delete(tok);
+      }
+    }
+    const newPlayer = { id: target.id, roomCode: room.code, name: pending.name, token: req.payload.token, created_at: nowIso(), isHost: target.isHost };
+    state.players.set(req.payload.token, newPlayer);
+    pending.status = "accepted";
+    pushEvent(room, "join_accepted", { name: pending.name, mode: "replace" });
+    return { ok:true };
+  }
+
+  const p = { id: room.nextPlayerId++, roomCode: room.code, name: pending.name, token: req.payload.token, created_at: nowIso(), isHost:false };
+  room.players.push({ id: p.id, name: p.name, isHost:false });
+  state.players.set(req.payload.token, p);
+  pending.status = "accepted";
+  if(room.status === "playing" || room.status === "finished" || room.status === "lobby"){
+    for(let i=0;i<5;i++){
+      const c = dealOne(room, p.id);
+      if(!c) break;
+    }
+  }
+  pushEvent(room, "player_joined", { name: p.name });
+  pushEvent(room, "join_accepted", { name: pending.name, mode: "new" });
+  return { ok:true };
+}
+
+export async function penalizePlayer(token, playerId, reason){
+  await ensureData();
+  const me = ensureMe(token);
+  const room = ensureRoom(me.roomCode);
+  if(me.id !== room.hostPlayerId) throw new Error("Solo el anfitrión puede penalizar");
+  const target = room.players.find(p=>p.id===Number(playerId));
+  if(!target) throw new Error("Jugador inválido");
+  dealOne(room, target.id);
+  pushEvent(room, "player_penalized", { player: target.name, reason: reason?.trim() || "Sin motivo" });
+  return { ok:true };
 }
