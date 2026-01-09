@@ -1,0 +1,9 @@
+{
+  "name": "Chamuyo (Mock)",
+  "short_name": "Chamuyo",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#cfe8ff",
+  "theme_color": "#7ad7ff",
+  "icons": []
+}
