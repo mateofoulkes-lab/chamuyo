@@ -1,3 +1,3 @@
-// Switchable connector: mock now, PHP later.
-// For production, replace the export line with: export * from "./connector.php.js";
-export * from "./connector.mock.js";
+// Switchable connector: PHP now, mock if needed.
+// For mock, replace the export line with: export * from "./connector.mock.js";
+export * from "./connector.php.js";
