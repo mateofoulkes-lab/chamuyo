@@ -8,6 +8,69 @@ const roomCodeEl = $("#roomCode");
 const subtitle = $("#subtitle");
 const deckCorner = $("#deckCorner");
 const toastEl = $("#toast");
+const debugEnabled = new URLSearchParams(window.location.search).get("debug") === "1";
+
+const debug = (() => {
+  if(!debugEnabled){
+    return { enabled:false, log(){}, set(){}, listMethods(){}, section(){} };
+  }
+
+  const panel = document.createElement("div");
+  panel.id = "debugPanel";
+  panel.innerHTML = `
+    <div class="debug-header">Debug activo</div>
+    <div class="debug-meta" id="debugMeta"></div>
+    <div class="debug-log" id="debugLog"></div>
+  `;
+  document.body.appendChild(panel);
+
+  const meta = panel.querySelector("#debugMeta");
+  const logEl = panel.querySelector("#debugLog");
+
+  function log(msg){
+    const line = document.createElement("div");
+    const ts = new Date().toLocaleTimeString();
+    line.textContent = `[${ts}] ${msg}`;
+    logEl.appendChild(line);
+  }
+
+  function set(key, value){
+    const row = document.createElement("div");
+    row.className = "debug-row";
+    row.innerHTML = `<span>${key}</span><strong>${value}</strong>`;
+    meta.appendChild(row);
+  }
+
+  function listMethods(obj, keys){
+    const items = keys.map((k)=> `${k}:${typeof obj[k] === "function" ? "ok" : "missing"}`);
+    set("Conector", items.join(" · "));
+  }
+
+  function section(title){
+    const row = document.createElement("div");
+    row.className = "debug-section";
+    row.textContent = title;
+    logEl.appendChild(row);
+  }
+
+  set("URL", window.location.href);
+  return { enabled:true, log, set, listMethods, section };
+})();
+
+function debugClick(label){
+  if(debug.enabled) debug.log(`click: ${label}`);
+}
+
+window.addEventListener("error", (event)=>{
+  if(!debug.enabled) return;
+  debug.log(`error: ${event.message || "Error"}`);
+});
+
+window.addEventListener("unhandledrejection", (event)=>{
+  if(!debug.enabled) return;
+  const reason = event.reason?.message || String(event.reason || "Unhandled rejection");
+  debug.log(`unhandled: ${reason}`);
+});
 
 const store = {
   me: null,      // { token, name, code, isHost }
@@ -140,9 +203,18 @@ function viewHome(){
   const box = h("div",{class:"card"},[
     h("div",{class:"section"},[
       h("div",{class:"grid2"},[
-        h("button",{class:"btnBig", onClick: ()=>route("create")},["CREAR JUEGO"]),
-        h("button",{class:"btnBig secondary", onClick: ()=>route("join")},["UNIRSE A JUEGO"]),
-        h("button",{class:"btnBig ghost", onClick: ()=>rulesPopup()},["¿CÓMO JUGAR?"])
+        h("button",{class:"btnBig", onClick: ()=>{
+          debugClick("crear juego");
+          route("create");
+        }},["CREAR JUEGO"]),
+        h("button",{class:"btnBig secondary", onClick: ()=>{
+          debugClick("unirse a juego");
+          route("join");
+        }},["UNIRSE A JUEGO"]),
+        h("button",{class:"btnBig ghost", onClick: ()=>{
+          debugClick("como jugar");
+          rulesPopup();
+        }},["¿CÓMO JUGAR?"])
       ])
     ])
   ]);
@@ -171,6 +243,7 @@ async function viewJoin(){
   const btn  = h("button",{class:"btnBig secondary"},["ENTRAR"]);
 
   btn.addEventListener("click", async ()=>{
+    debugClick("entrar");
     const n = name.value.trim();
     const c = code.value.trim();
     if(!n || !c) return toast("Completá nombre y código");
@@ -192,7 +265,10 @@ async function viewJoin(){
         h("div",{},[h("div",{class:"label"},["NOMBRE"]), name]),
         h("div",{},[h("div",{class:"label"},["CÓDIGO DE JUEGO"]), code]),
         btn,
-        h("button",{class:"btnBig ghost", onClick: ()=>route("home")},["VOLVER"])
+        h("button",{class:"btnBig ghost", onClick: ()=>{
+          debugClick("volver");
+          route("home");
+        }},["VOLVER"])
       ])
     ])
   ]);
@@ -215,6 +291,7 @@ async function viewCreate(){
 
   deckBtn.addEventListener("click", ()=>route("decks"));
   createBtn.addEventListener("click", async ()=>{
+    debugClick("crear sala");
     const n = name.value.trim();
     if(!n) return toast("Poné tu nombre");
     localStorage.setItem("chamuyo_name", n);
@@ -236,7 +313,10 @@ async function viewCreate(){
         deckBtn,
         deckLabel,
         createBtn,
-        h("button",{class:"btnBig ghost", onClick: ()=>route("home")},["VOLVER"])
+        h("button",{class:"btnBig ghost", onClick: ()=>{
+          debugClick("volver");
+          route("home");
+        }},["VOLVER"])
       ])
     ])
   ]);
@@ -263,6 +343,7 @@ async function viewDecks(){
       h("small",{},[d.subtitle || ""])
     ]);
     btn.addEventListener("click", ()=>{
+      debugClick(`seleccionar mazo ${d.id}`);
       store.selectedDeckId = d.id;
       toast(`Mazo: ${d.title}`);
       route("create");
@@ -274,7 +355,10 @@ async function viewDecks(){
     h("div",{class:"section"},[
       h("h2",{},["Mazos"]),
       h("div",{class:"list"}, items),
-      h("button",{class:"btnBig ghost", onClick: ()=>route("create")},["VOLVER"])
+      h("button",{class:"btnBig ghost", onClick: ()=>{
+        debugClick("volver");
+        route("create");
+      }},["VOLVER"])
     ])
   ]);
 }
@@ -308,15 +392,22 @@ async function viewLobby(){
   // host buttons
   if(store.me.isHost){
     btns.push(h("button",{class:"btnBig", onClick: async ()=>{
+      debugClick("repartir");
       const r = await safeCall(()=>api.startGame(store.me.token));
       if(!r) return;
       route("hand");
     }},["REPARTIR"]));
   }else{
-    btns.push(h("button",{class:"btnBig ghost", onClick: ()=>toast("Cuando el host reparta, entrás automáticamente en la versión final.")},["ACTUALIZAR"]));
+    btns.push(h("button",{class:"btnBig ghost", onClick: ()=>{
+      debugClick("actualizar");
+      toast("Cuando el host reparta, entrás automáticamente en la versión final.");
+    }},["ACTUALIZAR"]));
   }
 
-  btns.push(h("button",{class:"btnBig ghost", onClick: ()=>route("home")},["SALIR"]));
+  btns.push(h("button",{class:"btnBig ghost", onClick: ()=>{
+    debugClick("salir");
+    route("home");
+  }},["SALIR"]));
 
   // if already playing, go to hand
   if(store.room?.room?.status === "playing" || store.room?.room?.status === "finished"){
@@ -330,6 +421,7 @@ async function viewLobby(){
       h("div",{class:"row"},[
         h("div",{},[h("div",{class:"label"},["CÓDIGO"]), h("div",{style:"font-weight:900;font-size:22px"},[store.me.code])]),
         h("button",{class:"pill", onClick: async ()=>{
+          debugClick("copiar codigo");
           try{
             await navigator.clipboard.writeText(store.me.code);
             toast("Código copiado");
@@ -378,6 +470,7 @@ async function viewHand(){
 
   const btnNew = h("button",{class:"btnBig secondary"},["SACAR NUEVA CARTA"]);
   btnNew.addEventListener("click", async ()=>{
+    debugClick("sacar nueva carta");
     const r = await safeCall(()=>api.getNewCard(store.me.token));
     if(!r?.ok) return;
     toast("Nueva carta agregada");
@@ -385,10 +478,14 @@ async function viewHand(){
   });
 
   const btnAccuse = h("button",{class:"btnBig ghost"},["ME ACUSARON INJUSTAMENTE"]);
-  btnAccuse.addEventListener("click", ()=>toast("En la versión final, esto notifica al host/servidor."));
+  btnAccuse.addEventListener("click", ()=>{
+    debugClick("acusaron injustamente");
+    toast("En la versión final, esto notifica al host/servidor.");
+  });
 
   const btnExit = h("button",{class:"btnBig ghost"},["SALIR"]);
   btnExit.addEventListener("click", ()=>{
+    debugClick("salir");
     localStorage.removeItem("chamuyo_token");
     localStorage.removeItem("chamuyo_code");
     store.me = null;
@@ -397,7 +494,10 @@ async function viewHand(){
 
   const isHost = store.me.isHost;
   const btnAdmin = h("button",{class:"btnBig ghost"},["ADMINISTRAR"]);
-  btnAdmin.addEventListener("click", ()=>toast("Menú admin: próximamente (en backend real)."));
+  btnAdmin.addEventListener("click", ()=>{
+    debugClick("administrar");
+    toast("Menú admin: próximamente (en backend real).");
+  });
 
   return h("div",{class:"card"},[
     h("div",{class:"section"},[
@@ -442,6 +542,7 @@ function viewFinished(winnerName){
 // ===== Modal actions =====
 modal.btnS.addEventListener("click", async ()=>{
   if(!modal.current) return;
+  debugClick("chamuyo exitoso");
   setModalBusy(true);
   const r = await safeCall(()=>api.markSuccess(store.me.token, modal.current.cardId));
   setModalBusy(false);
@@ -456,6 +557,7 @@ modal.btnS.addEventListener("click", async ()=>{
 
 modal.btnF.addEventListener("click", async ()=>{
   if(!modal.current) return;
+  debugClick("chamuyo descubierto");
   setModalBusy(true);
   const r = await safeCall(()=>api.markVoided(store.me.token, modal.current.cardId));
   setModalBusy(false);
@@ -520,6 +622,7 @@ function stopConfetti(){
 function render(){
   const hash = (location.hash||"").replace("#","") || "home";
   const view = hash;
+  if(debug.enabled) debug.log(`render: ${view}`);
 
   let node = null;
   if(view==="home") node = viewHome();
@@ -540,9 +643,28 @@ function render(){
 // SW register
 if("serviceWorker" in navigator){
   window.addEventListener("load", ()=>{
-    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    navigator.serviceWorker.register("./sw.js").then(()=>{
+      if(debug.enabled) debug.log("service worker: registrado");
+    }).catch((err)=>{
+      if(debug.enabled) debug.log(`service worker: error ${err?.message || err}`);
+    });
   });
 }
 
 // boot
+if(debug.enabled){
+  debug.log("ui.js cargado");
+  debug.log("connector.js importado");
+  debug.listMethods(api, [
+    "createRoom",
+    "joinRoom",
+    "getRoomState",
+    "startGame",
+    "getMyHand",
+    "markSuccess",
+    "markVoided",
+    "getNewCard",
+    "listDecks"
+  ]);
+}
 render();

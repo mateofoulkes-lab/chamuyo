@@ -1,12 +1,32 @@
-import mockData from "./data/mock.json" assert { type: "json" };
+const mockDataUrl = new URL("./data/mock.json", import.meta.url);
+let mockDataPromise = null;
+
+async function loadMockData(){
+  if(!mockDataPromise){
+    mockDataPromise = fetch(mockDataUrl, { cache: "no-store" }).then(async (res)=>{
+      if(!res.ok){
+        throw new Error(`No se pudo cargar mock.json (${res.status})`);
+      }
+      return res.json();
+    });
+  }
+  return mockDataPromise;
+}
 
 // In-memory "server"
 const state = {
   rooms: new Map(),          // code -> room
   players: new Map(),        // token -> player
-  phrases: mockData.phrases.map((t,i)=>({id:i+1, text:t})),
-  decks: mockData.presets.decks,
+  phrases: [],
+  decks: [],
 };
+
+async function ensureData(){
+  if(state.decks.length && state.phrases.length) return;
+  const mockData = await loadMockData();
+  state.phrases = mockData.phrases.map((t,i)=>({id:i+1, text:t}));
+  state.decks = mockData.presets.decks;
+}
 
 // helpers
 const nowIso = () => new Date().toISOString();
@@ -88,6 +108,7 @@ function checkWinner(room){
 
 /* ===== Public API (same shape as PHP) ===== */
 export async function createRoom(name, { deckId="classic" } = {}){
+  await ensureData();
   const code = randCode();
   const room = {
     code,
@@ -138,6 +159,7 @@ export async function getRoomState(code){
 }
 
 export async function startGame(token){
+  await ensureData();
   const me = ensureMe(token);
   const room = ensureRoom(me.roomCode);
   if(me.id !== room.hostPlayerId) throw new Error("Solo el anfitrión puede repartir");
@@ -197,6 +219,7 @@ export async function markVoided(token, cardId){
 }
 
 export async function getNewCard(token){
+  await ensureData();
   const me = ensureMe(token);
   const room = ensureRoom(me.roomCode);
   if(room.status!=="playing") throw new Error("El juego no empezó");
@@ -208,5 +231,6 @@ export async function getNewCard(token){
 }
 
 export async function listDecks(){
+  await ensureData();
   return { ok:true, decks: state.decks.map(d=>({ id:d.id, title:d.title, subtitle:d.subtitle })) };
 }
