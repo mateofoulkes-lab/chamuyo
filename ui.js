@@ -9,6 +9,11 @@ const subtitle = $("#subtitle");
 const deckCorner = $("#deckCorner");
 const toastEl = $("#toast");
 const debugEnabled = new URLSearchParams(window.location.search).get("debug") === "1";
+const actionModalEl = $("#actionModal");
+const actionModalTitle = $("#amTitle");
+const actionModalBody = $("#amBody");
+const actionModalSubmit = $("#amSubmit");
+const actionModalCancel = $("#amCancel");
 
 const debug = (() => {
   if(!debugEnabled){
@@ -78,6 +83,7 @@ const store = {
   hand: [],
   decks: [],
   selectedDeckId: "classic",
+  lastEventId: 0,
 };
 
 function setStatus(t){ pillStatus.textContent = t; }
@@ -193,6 +199,176 @@ function setModalBusy(b){
   modal.btnC.disabled = b;
 }
 
+// ===== Action Modal =====
+const actionModal = {
+  el: actionModalEl,
+  title: actionModalTitle,
+  body: actionModalBody,
+  submit: actionModalSubmit,
+  cancel: actionModalCancel,
+  onSubmit: null,
+};
+
+function actionModalOpen({ title, body, submitLabel, onSubmit }){
+  actionModal.title.textContent = title;
+  actionModal.body.innerHTML = "";
+  actionModal.body.appendChild(body);
+  actionModal.submit.textContent = submitLabel;
+  actionModal.onSubmit = onSubmit;
+  actionModal.el.classList.remove("am-hidden");
+  document.documentElement.style.overflow = "hidden";
+}
+
+function actionModalClose(){
+  actionModal.el.classList.add("am-hidden");
+  document.documentElement.style.overflow = "";
+  actionModal.body.innerHTML = "";
+  actionModal.onSubmit = null;
+}
+
+function setActionModalBusy(b){
+  actionModal.submit.disabled = b;
+  actionModal.cancel.disabled = b;
+}
+
+actionModal.el?.addEventListener("click", (e)=>{
+  if(e.target?.dataset?.close) actionModalClose();
+});
+actionModal.cancel?.addEventListener("click", actionModalClose);
+actionModal.submit?.addEventListener("click", async ()=>{
+  if(!actionModal.onSubmit) return;
+  setActionModalBusy(true);
+  const ok = await actionModal.onSubmit();
+  setActionModalBusy(false);
+  if(ok) actionModalClose();
+});
+
+// ===== Event toasts =====
+function notifyFromEvents(events){
+  if(!store.me || !events?.length) return;
+  const newEvents = events.filter(e => e.id > store.lastEventId);
+  if(newEvents.length === 0) return;
+  for(const ev of newEvents){
+    const payload = ev.payload || {};
+    if(payload.player && payload.player !== store.me.name) continue;
+    if(ev.type === "swap_accepted"){
+      toast(`Tu recambio fue aprobado: ${payload.phrase || "carta nueva"}`);
+    }else if(ev.type === "swap_rejected"){
+      toast(`Recambio rechazado: ${payload.phrase || "carta"}`);
+    }else if(ev.type === "accusation_penalized"){
+      toast(`Se penalizó a ${payload.accused || "jugador"} por tu reclamo`);
+    }else if(ev.type === "accusation_dismissed"){
+      toast("Tu reclamo fue descartado");
+    }else if(ev.type === "player_penalized"){
+      toast(`Fuiste penalizado: ${payload.reason || "sin motivo"}`);
+    }
+  }
+  store.lastEventId = Math.max(store.lastEventId, ...newEvents.map(e=>e.id));
+}
+
+function renderHostNotifications(requests, players){
+  const title = h("div",{class:"label"},["NOTIFICACIONES (HOST)"]);
+  if(!requests.length){
+    return h("div",{class:"noticePanel"},[
+      title,
+      h("div",{class:"noticeEmpty"},["No hay solicitudes pendientes."])
+    ]);
+  }
+
+  const items = requests.map(req=>{
+    const meta = [];
+    if(req.type === "swap"){
+      meta.push(`"${req.payload.phrase}"`);
+      meta.push(`Motivo: ${req.payload.reason}`);
+      const accept = h("button",{class:"noticeBtn"},["Aceptar"]);
+      const reject = h("button",{class:"noticeBtn ghost"},["Rechazar"]);
+      accept.addEventListener("click", async ()=>{
+        const r = await safeCall(()=>api.respondCardSwap(store.me.token, req.id, true));
+        if(r?.ok) route("hand");
+      });
+      reject.addEventListener("click", async ()=>{
+        const r = await safeCall(()=>api.respondCardSwap(store.me.token, req.id, false));
+        if(r?.ok) route("hand");
+      });
+      return h("div",{class:"noticeItem"},[
+        h("div",{class:"noticeTitle"},[`${req.payload.playerName} pidió recambio`]),
+        h("div",{class:"noticeBody"}, meta.join(" · ")),
+        h("div",{class:"noticeActions"},[accept, reject])
+      ]);
+    }
+
+    if(req.type === "accusation"){
+      meta.push(`Acusado: ${req.payload.accusedName}`);
+      meta.push(`Aclaración: ${req.payload.reason}`);
+      const dismiss = h("button",{class:"noticeBtn ghost"},["Descartar"]);
+      const penalize = h("button",{class:"noticeBtn"},["Penalizar"]);
+      dismiss.addEventListener("click", async ()=>{
+        const r = await safeCall(()=>api.respondAccusation(store.me.token, req.id, "dismiss"));
+        if(r?.ok) route("hand");
+      });
+      penalize.addEventListener("click", async ()=>{
+        const r = await safeCall(()=>api.respondAccusation(store.me.token, req.id, "penalize"));
+        if(r?.ok) route("hand");
+      });
+      return h("div",{class:"noticeItem"},[
+        h("div",{class:"noticeTitle"},[`${req.payload.playerName} dijo "alguien me acusó injustamente"`]),
+        h("div",{class:"noticeBody"}, meta.join(" · ")),
+        h("div",{class:"noticeActions"},[dismiss, penalize])
+      ]);
+    }
+
+    if(req.type === "join"){
+      const accept = h("button",{class:"noticeBtn"},["Aceptar"]);
+      const reject = h("button",{class:"noticeBtn ghost"},["Rechazar"]);
+      accept.addEventListener("click", ()=>{
+        const options = players.filter(p=>!p.isHost).map(p=>h("option",{value:p.id},[p.name]));
+        const modeNew = h("input",{type:"radio", name:"joinMode", value:"new", checked:true});
+        const modeReplace = h("input",{type:"radio", name:"joinMode", value:"replace"});
+        const select = h("select",{class:"input"}, options.length ? options : [h("option",{value:""},["Sin jugadores"])] );
+        select.disabled = options.length === 0;
+        const body = h("div",{class:"formRow"},[
+          h("div",{class:"label"},["Elegí cómo asignar"]),
+          h("label",{class:"radioRow"},[modeNew, h("span",{},["Nuevo miembro (5 cartas nuevas)"])]),
+          h("label",{class:"radioRow"},[modeReplace, h("span",{},["Reemplazar miembro existente"])]),
+          h("div",{class:"label"},["MIEMBRO A REEMPLAZAR"]),
+          select
+        ]);
+        actionModalOpen({
+          title: `Aceptar a ${req.payload.name}`,
+          body,
+          submitLabel: "CONFIRMAR",
+          onSubmit: async ()=>{
+            const mode = modeReplace.checked ? "replace" : "new";
+            const replaceId = mode === "replace" ? select.value : null;
+            if(mode === "replace" && !replaceId) return false;
+            const r = await safeCall(()=>api.respondJoinRequest(store.me.token, req.id, mode, replaceId));
+            if(!r?.ok) return false;
+            route("lobby");
+            return true;
+          }
+        });
+      });
+      reject.addEventListener("click", async ()=>{
+        const r = await safeCall(()=>api.respondJoinRequest(store.me.token, req.id, "reject"));
+        if(r?.ok) route("lobby");
+      });
+      return h("div",{class:"noticeItem"},[
+        h("div",{class:"noticeTitle"},[`${req.payload.name} quiere unirse`]),
+        h("div",{class:"noticeActions"},[accept, reject])
+      ]);
+    }
+
+    return h("div",{class:"noticeItem"},[
+      h("div",{class:"noticeTitle"},["Solicitud desconocida"])
+    ]);
+  });
+
+  return h("div",{class:"noticePanel"},[
+    title,
+    h("div",{class:"noticeList"}, items)
+  ]);
+}
+
 // ===== Views =====
 
 function viewHome(){
@@ -255,7 +431,7 @@ async function viewJoin(){
     store.me = { token:r.playerToken, name:n, code:r.roomCode, isHost:false };
     localStorage.setItem("chamuyo_token", r.playerToken);
     localStorage.setItem("chamuyo_code", r.roomCode);
-    route("lobby");
+    route("joinwait");
   });
 
   return h("div",{class:"card"},[
@@ -267,6 +443,42 @@ async function viewJoin(){
         btn,
         h("button",{class:"btnBig ghost", onClick: ()=>{
           debugClick("volver");
+          route("home");
+        }},["VOLVER"])
+      ])
+    ])
+  ]);
+}
+
+async function viewJoinWait(){
+  if(!store.me){
+    return viewHome();
+  }
+  showRoom(store.me.code);
+  deckCorner.style.display = "none";
+  subtitle.textContent = "Solicitud enviada";
+
+  const status = await safeCall(()=>api.getJoinStatus(store.me.token));
+  if(status?.status === "active"){
+    route("lobby");
+    return h("div",{class:"card"},[]);
+  }
+
+  const message = status?.status === "rejected"
+    ? "El anfitrión rechazó la solicitud."
+    : "Esperando aprobación del anfitrión…";
+
+  return h("div",{class:"card"},[
+    h("div",{class:"section"},[
+      h("h2",{},["Solicitud de ingreso"]),
+      h("div",{class:"sub"},[message]),
+      h("div",{style:"height:12px"}),
+      h("div",{class:"formRow"},[
+        h("button",{class:"btnBig secondary", onClick: ()=>route("joinwait")},["ACTUALIZAR ESTADO"]),
+        h("button",{class:"btnBig ghost", onClick: ()=>{
+          localStorage.removeItem("chamuyo_token");
+          localStorage.removeItem("chamuyo_code");
+          store.me = null;
           route("home");
         }},["VOLVER"])
       ])
@@ -382,6 +594,7 @@ async function viewLobby(){
 
   const rs = await safeCall(()=>api.getRoomState(store.me.code));
   if(rs?.ok) store.room = rs;
+  notifyFromEvents(store.room?.events || []);
 
   const players = (store.room?.players || []).map(p => h("div",{class:"pill"},[p.name + (p.isHost ? " (host)" : "")]));
   const list = h("div",{class:"pills", style:"flex-wrap:wrap"}, players.length?players:[h("div",{class:"pill"},["—"])]);
@@ -415,6 +628,14 @@ async function viewLobby(){
     setTimeout(()=>route("hand"), 200);
   }
 
+  let notifications = null;
+  if(store.me.isHost){
+    const reqs = await safeCall(()=>api.listRequests(store.me.token));
+    if(reqs?.ok){
+      notifications = renderHostNotifications(reqs.requests, store.room?.players || []);
+    }
+  }
+
   return h("div",{class:"card"},[
     h("div",{class:"section"},[
       h("h2",{},["Lobby"]),
@@ -433,6 +654,7 @@ async function viewLobby(){
       h("div",{style:"height:10px"}),
       msg,
       h("div",{style:"height:12px"}),
+      ...(notifications ? [notifications, h("div",{style:"height:12px"})] : []),
       h("div",{class:"formRow"}, btns),
     ])
   ]);
@@ -448,6 +670,7 @@ async function viewHand(){
 
   const rs = await safeCall(()=>api.getRoomState(store.me.code));
   if(rs?.ok) store.room = rs;
+  notifyFromEvents(store.room?.events || []);
 
   // show finished screen
   const finishedEv = store.room?.events?.find(e=>e.type==="game_finished");
@@ -460,27 +683,61 @@ async function viewHand(){
 
   const list = h("div",{class:"list"});
   for(const c of store.hand){
-    const btn = h("button",{class:"handRow"},[
+    const openBtn = h("button",{class:"handRowBtn"},[
       c.phrase,
       h("small",{},["Tocá para abrir la carta"])
     ]);
-    btn.addEventListener("click", ()=>modalOpen(c));
-    list.appendChild(btn);
-  }
+    openBtn.addEventListener("click", ()=>modalOpen(c));
 
-  const btnNew = h("button",{class:"btnBig secondary"},["SACAR NUEVA CARTA"]);
-  btnNew.addEventListener("click", async ()=>{
-    debugClick("sacar nueva carta");
-    const r = await safeCall(()=>api.getNewCard(store.me.token));
-    if(!r?.ok) return;
-    toast("Nueva carta agregada");
-    route("hand"); // refresh
-  });
+    const swapBtn = h("button",{class:"handRowSwap", title:"Pedir recambio"},["⟳"]);
+    swapBtn.addEventListener("click", (event)=>{
+      event.stopPropagation();
+      const reason = h("textarea",{class:"input", rows:"3", placeholder:"Motivo del recambio"});
+      const body = h("div",{class:"formRow"},[
+        h("div",{class:"label"},["ACLARACIÓN"]),
+        reason
+      ]);
+      actionModalOpen({
+        title: "Pedir recambio de carta",
+        body,
+        submitLabel: "ENVIAR SOLICITUD",
+        onSubmit: async ()=>{
+          const r = await safeCall(()=>api.requestCardSwap(store.me.token, c.cardId, reason.value));
+          if(!r?.ok) return false;
+          toast("Solicitud enviada al host");
+          return true;
+        }
+      });
+    });
+
+    const row = h("div",{class:"handRowWrap"},[openBtn, swapBtn]);
+    list.appendChild(row);
+  }
 
   const btnAccuse = h("button",{class:"btnBig ghost"},["ME ACUSARON INJUSTAMENTE"]);
   btnAccuse.addEventListener("click", ()=>{
     debugClick("acusaron injustamente");
-    toast("En la versión final, esto notifica al host/servidor.");
+    const options = (store.room?.players || []).filter(p=>p.name !== store.me.name);
+    if(options.length === 0) return toast("No hay otros jugadores disponibles");
+    const select = h("select",{class:"input"}, options.map(p=>h("option",{value:p.id},[p.name])));
+    const reason = h("textarea",{class:"input", rows:"3", placeholder:"Aclaraciones"});
+    const body = h("div",{class:"formRow"},[
+      h("div",{class:"label"},["JUGADOR QUE ACUSÓ"]),
+      select,
+      h("div",{class:"label"},["ACLARACIONES"]),
+      reason
+    ]);
+    actionModalOpen({
+      title: "Me acusaron injustamente",
+      body,
+      submitLabel: "ENVIAR AL HOST",
+      onSubmit: async ()=>{
+        const r = await safeCall(()=>api.requestAccusation(store.me.token, select.value, reason.value));
+        if(!r?.ok) return false;
+        toast("Notificación enviada al host");
+        return true;
+      }
+    });
   });
 
   const btnExit = h("button",{class:"btnBig ghost"},["SALIR"]);
@@ -493,21 +750,59 @@ async function viewHand(){
   });
 
   const isHost = store.me.isHost;
-  const btnAdmin = h("button",{class:"btnBig ghost"},["ADMINISTRAR"]);
-  btnAdmin.addEventListener("click", ()=>{
-    debugClick("administrar");
-    toast("Menú admin: próximamente (en backend real).");
+  const btnPenalty = h("button",{class:"btnBig secondary"},["PENALIZAR"]);
+  btnPenalty.addEventListener("click", ()=>{
+    debugClick("penalizar");
+    const options = (store.room?.players || []).filter(p=>!p.isHost);
+    if(options.length === 0) return toast("No hay jugadores para penalizar");
+    const select = h("select",{class:"input"}, options.map(p=>h("option",{value:p.id},[p.name])));
+    const reason = h("textarea",{class:"input", rows:"3", placeholder:"Motivo de la penalización"});
+    const body = h("div",{class:"formRow"},[
+      h("div",{class:"label"},["JUGADOR"]),
+      select,
+      h("div",{class:"label"},["MENSAJE"]),
+      reason
+    ]);
+    actionModalOpen({
+      title: "Penalizar jugador",
+      body,
+      submitLabel: "PENALIZAR",
+      onSubmit: async ()=>{
+        const r = await safeCall(()=>api.penalizePlayer(store.me.token, select.value, reason.value));
+        if(!r?.ok) return false;
+        toast("Jugador penalizado");
+        route("hand");
+        return true;
+      }
+    });
   });
+
+  const btnNew = h("button",{class:"btnBig secondary"},["SACAR NUEVA CARTA"]);
+  btnNew.addEventListener("click", async ()=>{
+    debugClick("sacar nueva carta");
+    const r = await safeCall(()=>api.getNewCard(store.me.token));
+    if(!r?.ok) return;
+    toast("Nueva carta agregada");
+    route("hand"); // refresh
+  });
+
+  let notifications = null;
+  if(store.me.isHost){
+    const reqs = await safeCall(()=>api.listRequests(store.me.token));
+    if(reqs?.ok){
+      notifications = renderHostNotifications(reqs.requests, store.room?.players || []);
+    }
+  }
 
   return h("div",{class:"card"},[
     h("div",{class:"section"},[
       h("h2",{},["Tu mano"]),
       list,
       h("div",{style:"height:10px"}),
+      ...(notifications ? [notifications, h("div",{style:"height:10px"})] : []),
       h("div",{class:"formRow"},[
-        btnNew,
+        ...(isHost ? [btnPenalty] : [btnNew]),
         btnAccuse,
-        ...(isHost ? [btnAdmin] : []),
         btnExit
       ])
     ])
@@ -563,7 +858,7 @@ modal.btnF.addEventListener("click", async ()=>{
   setModalBusy(false);
   if(!r) return;
   modalClose();
-  toast("Carta marcada como descubierta");
+  toast("Carta descartada y reemplazada");
   route("hand");
 });
 
@@ -630,6 +925,7 @@ function render(){
   else if(view==="create") node = viewCreate();
   else if(view==="decks") node = viewDecks();
   else if(view==="lobby") node = viewLobby();
+  else if(view==="joinwait") node = viewJoinWait();
   else if(view==="hand") node = viewHand();
   else node = viewHome();
 
@@ -664,7 +960,15 @@ if(debug.enabled){
     "markSuccess",
     "markVoided",
     "getNewCard",
-    "listDecks"
+    "listDecks",
+    "listRequests",
+    "requestCardSwap",
+    "respondCardSwap",
+    "requestAccusation",
+    "respondAccusation",
+    "respondJoinRequest",
+    "getJoinStatus",
+    "penalizePlayer"
   ]);
 }
 render();
