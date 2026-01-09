@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chamuyo (Mock)</title>
+  <meta name="theme-color" content="#7ad7ff" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logoMark">C</div>
+      <div>
+        <h1>Chamuyo</h1>
+        <p class="sub" id="subtitle">Party game · versión mock</p>
+      </div>
+    </div>
+    <div class="pills">
+      <div class="pill" id="pillStatus">Listo</div>
+      <div class="pill" id="pillRoom" style="display:none">Sala <span id="roomCode">—</span></div>
+    </div>
+  </div>
+
+  <div id="viewRoot"></div>
+</div>
+
+<!-- Deck corner -->
+<div class="deckCorner" id="deckCorner" aria-hidden="true" style="display:none">
+  <div class="d1"></div><div class="d2"></div><div class="d3"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Confetti canvas -->
+<canvas class="confetti" id="confetti" width="1" height="1" style="display:none"></canvas>
+
+<!-- Card Modal -->
+<div id="cardModal" class="cm-overlay cm-hidden" role="dialog" aria-modal="true" aria-label="Carta">
+  <div class="cm-backdrop" data-close="1"></div>
+
+  <div class="cm-sheet" id="cmSheet" role="document">
+    <div class="cm-card">
+      <div class="cm-frame">
+        <div class="cm-top">
+          <div class="cm-badge">
+            <span class="cm-title">Chamuyo</span>
+            <span class="cm-dice" aria-hidden="true">🎲</span>
+          </div>
+        </div>
+
+        <div class="cm-text" id="cmText">…</div>
+
+        <div class="cm-actions">
+          <button id="cmSuccess" class="cm-btn cm-btn-success">✔ Chamuyo exitoso</button>
+          <button id="cmFail" class="cm-btn cm-btn-fail">✖ Chamuyo descubierto</button>
+          <button id="cmClose" class="cm-btn cm-btn-neutral">Cerrar</button>
+        </div>
+
+        <div class="cm-sparkles" aria-hidden="true">
+          <span>✦</span><span>✦</span><span>✦</span><span>✦</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="ui.js"></script>
+</body>
+</html>
