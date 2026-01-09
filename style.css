@@ -440,6 +440,52 @@ h1{
   z-index: 99998;
 }
 
+/* Debug panel (only with ?debug=1) */
+#debugPanel{
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 100000;
+  background: rgba(16,32,38,.92);
+  color: #f4fbff;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 14px;
+  box-shadow: 0 16px 32px rgba(0,0,0,.35);
+  font-size: 12px;
+  padding: 10px 12px;
+  max-height: 40vh;
+  overflow: hidden;
+}
+#debugPanel .debug-header{
+  font-weight: 900;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+#debugPanel .debug-meta{
+  display: grid;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+#debugPanel .debug-row{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+#debugPanel .debug-row span{ opacity: .75; }
+#debugPanel .debug-log{
+  border-top: 1px solid rgba(255,255,255,.12);
+  padding-top: 6px;
+  display: grid;
+  gap: 4px;
+  max-height: 20vh;
+  overflow: auto;
+}
+#debugPanel .debug-section{
+  opacity: .6;
+  font-weight: 700;
+}
+
 @media (prefers-reduced-motion: reduce){
   .cm-sheet{ animation:none; opacity:1; transform:none; }
   .cm-btn{ transition:none; }

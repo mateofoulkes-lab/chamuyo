@@ -1,8 +1,7 @@
 /* Minimal SW for GitHub Pages / static hosting */
-const CACHE = "chamuyo-mock-v1";
+const CACHE = "chamuyo-mock-v2";
 const ASSETS = [
   "./",
-  "./index.html",
   "./style.css",
   "./ui.js",
   "./connector.js",
@@ -27,6 +26,21 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
+  if(e.request.mode === "navigate" || e.request.headers.get("accept")?.includes("text/html")){
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      try{
+        const res = await fetch(e.request);
+        if(res.ok) cache.put(e.request, res.clone());
+        return res;
+      }catch{
+        const cached = await cache.match(e.request) || await cache.match("./");
+        return cached || Response.error();
+      }
+    })());
+    return;
+  }
+
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(e.request);
