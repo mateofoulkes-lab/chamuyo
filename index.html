@@ -1,254 +1,62 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chamuyo - Prototipo</title>
-    <style>
-      :root { --bg:#0f172a; --panel:#111827; --panel-soft:#1f2937; --text:#f8fafc; --muted:#cbd5e1; --accent:#22c55e; --danger:#ef4444; --border:#334155; }
-      * { box-sizing: border-box; }
-      body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:linear-gradient(180deg,#0b1022 0%,var(--bg) 100%); color:var(--text); min-height:100vh; }
-      .app { width:min(100%,680px); margin:0 auto; padding:16px; }
-      .card { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:16px; }
-      .logo-wrap { display:flex; justify-content:center; margin-bottom:16px; }
-      .logo { max-width:180px; width:60%; height:auto; }
-      h1,h2,h3 { margin:0 0 12px; } p { color:var(--muted); margin:0 0 10px; }
-      .stack { display:grid; gap:12px; }
-      button { width:100%; min-height:52px; border:none; border-radius:12px; padding:12px 14px; font-size:1rem; font-weight:700; cursor:pointer; color:#fff; background:#2563eb; }
-      button.secondary { background:#374151; } button.success{ background:var(--accent); color:#052e16;} button.danger{ background:var(--danger);} button:disabled{opacity:.45;cursor:not-allowed;}
-      .input,.phrase-input { width:100%; min-height:48px; border:1px solid var(--border); border-radius:10px; background:var(--panel-soft); color:var(--text); padding:10px 12px; font-size:1rem; }
-      .row { display:grid; gap:8px; }
-      .players { list-style:none; padding:0; margin:12px 0 0; display:grid; gap:8px; }
-      .players li { border:1px solid var(--border); border-radius:10px; padding:10px; background:#0b1220; }
-      .players li.ready-player { border-color:#15803d; background:#052e1b; }
-      .tag { display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; font-size:.75rem; background:#14532d; color:#dcfce7; }
-      .status { color:var(--muted); font-size:.9rem; }
-      .error { color:#fecaca; background:#7f1d1d; padding:8px 10px; border-radius:8px; }
-      .ok { color:#dcfce7; background:#14532d; padding:8px 10px; border-radius:8px; }
-      .muted-box { color:var(--muted); border:1px dashed var(--border); border-radius:10px; padding:10px; }
-      .hidden { display:none !important; }
-    </style>
-  </head>
-  <body>
-    <main class="app">
-      <section id="home" class="card stack">
-        <div class="logo-wrap"><img class="logo" src="logo.png" alt="Logo Chamuyo" /></div>
-        <button id="btnCreateRoom">Crear sala</button>
-        <button id="btnJoinRoom" class="secondary">Unirse a sala</button>
-        <button disabled>Crear/editar listas (próximamente)</button>
-        <div id="homeMsg" class="hidden"></div>
-      </section>
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chamuyo - Prototipo</title>
+<style>
+:root{--bg:#0f172a;--panel:#111827;--panel-soft:#1f2937;--text:#f8fafc;--muted:#cbd5e1;--accent:#22c55e;--danger:#ef4444;--border:#334155}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(180deg,#0b1022 0%,var(--bg) 100%);color:var(--text);min-height:100vh}
+.app{width:min(100%,720px);margin:0 auto;padding:16px}.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
+.logo{max-width:180px;width:60%;height:auto}.logo-sm{max-width:90px;width:40%}.stack{display:grid;gap:12px}.row{display:grid;gap:8px}
+button{width:100%;min-height:52px;border:none;border-radius:12px;padding:12px 14px;font-size:1rem;font-weight:700;cursor:pointer;color:#fff;background:#2563eb}
+button.secondary{background:#374151}button.success{background:var(--accent);color:#052e16}button.danger{background:var(--danger)}button:disabled{opacity:.45;cursor:not-allowed}
+.input,.phrase-input{width:100%;min-height:48px;border:1px solid var(--border);border-radius:10px;background:var(--panel-soft);color:var(--text);padding:10px 12px;font-size:1rem}
+.players,.phrases{list-style:none;padding:0;margin:0;display:grid;gap:8px}.players li,.phrase-card{border:1px solid var(--border);border-radius:10px;padding:10px;background:#0b1220}
+.phrase-card{min-height:64px;display:flex;align-items:center;font-weight:600}.phrase-card:active{transform:scale(.99)}
+.scroll-y{max-height:190px;overflow-y:auto;overflow-x:hidden;padding-right:4px}.ready-player{border-color:#15803d;background:#052e1b}
+.tag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:.75rem;background:#14532d;color:#dcfce7}
+.status{color:var(--muted);font-size:.9rem}.error{color:#fecaca;background:#7f1d1d;padding:8px 10px;border-radius:8px}.ok{color:#dcfce7;background:#14532d;padding:8px 10px;border-radius:8px}.muted-box{color:var(--muted);border:1px dashed var(--border);border-radius:10px;padding:10px}.hidden{display:none!important}
+</style>
+</head>
+<body><main class="app">
+<section id="home" class="card stack"><div style="display:flex;justify-content:center"><img class="logo" src="logo.png" alt="Logo Chamuyo"/></div><button id="btnCreateRoom">Crear sala</button><button id="btnJoinRoom" class="secondary">Unirse a sala</button><button disabled>Crear/editar listas (próximamente)</button><div id="homeMsg" class="hidden"></div></section>
+<section id="flow" class="card stack hidden"></section>
+<section id="lobby" class="card stack hidden"><h2 id="lobbyRoomName">Lobby</h2><p id="lobbyMeta"></p><div id="myPhrasesBox" class="stack"></div><ul id="playersList" class="players"></ul><div id="adminActions" class="stack hidden"><button id="btnStartGame">Iniciar partida</button><button id="btnCloseRoom" class="danger">Cerrar sala</button></div></section>
+<section id="game" class="card stack hidden"><div style="display:flex;justify-content:center"><img class="logo-sm" src="logo.png" alt="Logo Chamuyo"/></div><h3>Tus frases visibles</h3><ul id="visiblePhrases" class="phrases"></ul><div id="copyMsg" class="hidden"></div><h3>Jugadores</h3><div class="scroll-y"><ul id="gamePlayers" class="players"></ul></div><h3>Eventos recientes</h3><div class="scroll-y"><ul id="recentLogs" class="players"></ul></div></section>
+</main>
+<script type="module">
+import { init, id } from "https://esm.sh/@instantdb/browser";
+const APP_ID="REEMPLAZAR_CON_TU_APP_ID"; const app=init({appId:APP_ID}); const CLIENT_ID_KEY="chamuyo_client_id"; const clientId=getOrCreateClientId();
+const ui={home:home,flow:flow,lobby:lobby,game:game,homeMsg:homeMsg,btnCreateRoom,btnJoinRoom,lobbyRoomName,lobbyMeta,playersList,adminActions,btnStartGame,btnCloseRoom,myPhrasesBox,visiblePhrases,gamePlayers,recentLogs,copyMsg};
+let currentRoomId=null,currentPlayerId=null;
+ui.btnCreateRoom.onclick=showCreateRoomFlow; ui.btnJoinRoom.onclick=showJoinRoomFlow; ui.btnCloseRoom.onclick=closeRoomAsAdmin; ui.btnStartGame.onclick=()=>startGame(currentRoomId);
+app.subscribeQuery({rooms:{},players:{},phrases:{},logs:{},phraseAuthors:{}},(resp)=>{if(resp?.error||!currentRoomId)return; const rooms=resp.data.rooms||[],players=(resp.data.players||[]).filter(p=>p.roomId===currentRoomId),phrases=(resp.data.phrases||[]).filter(p=>p.roomId===currentRoomId),logs=(resp.data.logs||[]).filter(l=>l.roomId===currentRoomId); const room=rooms.find(r=>r.id===currentRoomId); if(!room||room.status==="closed"){showMessage(ui.homeMsg,"La sala se cerró.",true);return resetToHome();} if(room.status==="playing") renderGame(room,players,phrases,logs); else renderLobby(room,players,phrases);});
 
-      <section id="flow" class="card stack hidden"></section>
-
-      <section id="lobby" class="card stack hidden">
-        <h2 id="lobbyRoomName">Lobby</h2>
-        <p id="lobbyMeta"></p>
-        <div id="myPhrasesBox" class="stack"></div>
-        <ul id="playersList" class="players"></ul>
-        <div id="adminActions" class="stack hidden">
-          <button id="btnStartGame">Iniciar partida</button>
-          <button id="btnCloseRoom" class="danger">Cerrar sala</button>
-        </div>
-      </section>
-    </main>
-
-    <script type="module">
-      import { init, id } from "https://esm.sh/@instantdb/browser";
-      const APP_ID = "REEMPLAZAR_CON_TU_APP_ID";
-      const app = init({ appId: APP_ID });
-      const CLIENT_ID_KEY = "chamuyo_client_id";
-      const clientId = getOrCreateClientId();
-
-      const ui = {
-        home: document.getElementById("home"), flow: document.getElementById("flow"), lobby: document.getElementById("lobby"), homeMsg: document.getElementById("homeMsg"),
-        btnCreateRoom: document.getElementById("btnCreateRoom"), btnJoinRoom: document.getElementById("btnJoinRoom"), lobbyRoomName: document.getElementById("lobbyRoomName"),
-        lobbyMeta: document.getElementById("lobbyMeta"), playersList: document.getElementById("playersList"), adminActions: document.getElementById("adminActions"),
-        btnStartGame: document.getElementById("btnStartGame"), btnCloseRoom: document.getElementById("btnCloseRoom"), myPhrasesBox: document.getElementById("myPhrasesBox"),
-      };
-
-      let currentRoomId = null;
-      let currentPlayerId = null;
-
-      ui.btnCreateRoom.addEventListener("click", showCreateRoomFlow);
-      ui.btnJoinRoom.addEventListener("click", showJoinRoomFlow);
-      ui.btnCloseRoom.addEventListener("click", closeRoomAsAdmin);
-      ui.btnStartGame.addEventListener("click", () => alert("Listo para implementar reparto"));
-
-      // Suscripción reactiva a sala, jugadores, frases y logs del lobby
-      app.subscribeQuery({ rooms: {}, players: {}, phrases: {}, logs: {} }, (resp) => {
-        if (resp?.error || !currentRoomId) return;
-        const room = (resp.data.rooms || []).find((r) => r.id === currentRoomId);
-        const players = (resp.data.players || []).filter((p) => p.roomId === currentRoomId);
-        const phrases = (resp.data.phrases || []).filter((ph) => ph.roomId === currentRoomId);
-        if (!room || room.status === "closed") { showMessage(ui.homeMsg, "La sala se cerró.", true); resetToHome(); return; }
-        renderLobby(room, players, phrases);
-      });
-
-      function showCreateRoomFlow() {
-        ui.home.classList.add("hidden"); ui.lobby.classList.add("hidden"); ui.flow.classList.remove("hidden");
-        ui.flow.innerHTML = `<h2>Crear sala</h2><div class="row"><label>Nombre de sala</label><input id="roomName" class="input" maxlength="30" /></div><div class="row"><label>Contraseña</label><input id="roomPass" class="input" type="password" maxlength="30" /></div><div class="row"><label>Tu nombre de jugador</label><input id="playerName" class="input" maxlength="24" /></div><button id="submitCreate" class="success">Crear y entrar</button><button id="cancelFlow" class="secondary">Cancelar</button><div id="flowMsg" class="hidden"></div>`;
-        document.getElementById("submitCreate").onclick = createRoomAndAdmin; document.getElementById("cancelFlow").onclick = resetToHome;
-      }
-
-      function showJoinRoomFlow() {
-        ui.home.classList.add("hidden"); ui.lobby.classList.add("hidden"); ui.flow.classList.remove("hidden");
-        ui.flow.innerHTML = `<h2>Unirse a sala</h2><div class="row"><label>Nombre de sala</label><input id="roomName" class="input" maxlength="30" /></div><div class="row"><label>Contraseña</label><input id="roomPass" class="input" type="password" maxlength="30" /></div><div class="row"><label>Tu nombre de jugador</label><input id="playerName" class="input" maxlength="24" /></div><button id="submitJoin" class="success">Entrar</button><button id="cancelFlow" class="secondary">Cancelar</button><div id="flowMsg" class="hidden"></div>`;
-        document.getElementById("submitJoin").onclick = joinRoom; document.getElementById("cancelFlow").onclick = resetToHome;
-      }
-
-      // Crea sala y jugador admin en estado naming (debe cargar frases)
-      async function createRoomAndAdmin() {
-        const roomName = readInput("roomName"), password = readInput("roomPass"), playerName = readInput("playerName"), msg = document.getElementById("flowMsg");
-        if (!roomName || !password || !playerName) return showMessage(msg, "Completá todos los campos.", true);
-        const roomId = id(), playerId = id(), now = Date.now();
-        const tx = app.tx.rooms[roomId].update({ name: roomName, nameNorm: norm(roomName), password, status: "lobby", createdAt: now, adminPlayerId: playerId }).players[playerId].update({ roomId, name: playerName, nameNorm: norm(playerName), isAdmin: true, status: "naming", joinedAt: now, points: 0, swapsLeft: 2, clientId });
-        try {
-          await app.transact(tx);
-          await createLog(roomId, `${playerName} se unió a la sala`);
-          currentRoomId = roomId; currentPlayerId = playerId; openLobby();
-        } catch { showMessage(msg, "Error creando sala.", true); }
-      }
-
-      // Une jugador en estado naming y registra log público
-      async function joinRoom() {
-        const roomName = readInput("roomName"), password = readInput("roomPass"), playerName = readInput("playerName"), msg = document.getElementById("flowMsg");
-        if (!roomName || !password || !playerName) return showMessage(msg, "Completá todos los campos.", true);
-        try {
-          const resp = await app.queryOnce({ rooms: {}, players: {} });
-          const rooms = resp.data.rooms || [], players = resp.data.players || [];
-          const room = rooms.find((r) => r.nameNorm === norm(roomName) && r.status !== "closed");
-          if (!room) return showMessage(msg, "Sala no encontrada.", true);
-          if (room.password !== password) return showMessage(msg, "Contraseña incorrecta.", true);
-          const duplicated = players.some((p) => p.roomId === room.id && p.nameNorm === norm(playerName) && p.status !== "left" && p.status !== "kicked");
-          if (duplicated) return showMessage(msg, "Ese nombre ya está en uso en la sala.", true);
-          const playerId = id();
-          await app.transact(app.tx.players[playerId].update({ roomId: room.id, name: playerName, nameNorm: norm(playerName), isAdmin: false, status: "naming", joinedAt: Date.now(), points: 0, swapsLeft: 2, clientId }));
-          await createLog(room.id, `${playerName} se unió a la sala`);
-          currentRoomId = room.id; currentPlayerId = playerId; openLobby();
-        } catch { showMessage(msg, "Error al unirse.", true); }
-      }
-
-      // Valida inputs y duplicados locales/remotos con normalización pedida
-      function validatePhraseInputs(rawPhrases, existingPhrasesNorm) {
-        const localNorms = new Set();
-        for (let i = 0; i < rawPhrases.length; i += 1) {
-          const text = rawPhrases[i].trim();
-          const textNorm = normalizePhrase(text);
-          if (!textNorm) return { ok: false, error: `La frase ${i + 1} está vacía.` };
-          if (localNorms.has(textNorm)) return { ok: false, error: `La frase ${i + 1} está repetida en tu lista.` };
-          if (existingPhrasesNorm.has(textNorm)) return { ok: false, error: `La frase ${i + 1} ya existe en la sala.` };
-          localNorms.add(textNorm);
-        }
-        return { ok: true, norms: [...localNorms] };
-      }
-
-      // Guarda 8 frases + 8 phraseAuthors y marca jugador ready en una sola transacción
-      async function savePlayerPhrases() {
-        const formMsg = document.getElementById("phrasesMsg");
-        const phraseInputs = [...document.querySelectorAll(".phrase-input")].map((el) => el.value || "");
-        const resp = await app.queryOnce({ players: {}, phrases: {} });
-        const players = (resp.data.players || []).filter((p) => p.roomId === currentRoomId);
-        const me = players.find((p) => p.id === currentPlayerId || p.clientId === clientId);
-        if (!me) return showMessage(formMsg, "No se pudo identificar tu jugador.", true);
-
-        const existingPhrasesNorm = new Set((resp.data.phrases || []).filter((ph) => ph.roomId === currentRoomId).map((ph) => ph.textNorm));
-        const validation = validatePhraseInputs(phraseInputs, existingPhrasesNorm);
-        if (!validation.ok) return showMessage(formMsg, validation.error, true);
-
-        let tx = app.tx.players[me.id].update({ status: "ready" });
-        const now = Date.now();
-        for (const text of phraseInputs) {
-          const phraseId = id();
-          const authorId = id();
-          tx = tx.phrases[phraseId].update({ roomId: currentRoomId, text: text.trim(), textNorm: normalizePhrase(text), originalAuthorId: me.id, currentOwnerId: null, visibility: "unassigned", status: "available", source: "player_setup", createdByPlayerId: me.id, createdAt: now }).phraseAuthors[authorId].update({ roomId: currentRoomId, phraseId, playerId: me.id, authorType: "original", createdAt: now, active: true });
-        }
-
-        try {
-          await app.transact(tx);
-          await createLog(currentRoomId, `${me.name} cargó sus frases`);
-          showMessage(formMsg, "Frases guardadas correctamente.", false);
-        } catch {
-          showMessage(formMsg, "No se pudieron guardar las frases.", true);
-        }
-      }
-
-      function canAdminStartGame(players) {
-        const activePlayers = players.filter((p) => p.status !== "left" && p.status !== "kicked");
-        return activePlayers.length >= 3 && activePlayers.every((p) => p.status === "ready");
-      }
-
-      // Normaliza texto para detectar duplicados entre frases
-      function normalizePhrase(text) {
-        let value = (text || "").trim().toLowerCase();
-        value = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        value = value.replace(/^['"“”‘’]+/, "").replace(/['"“”‘’]+$/, "");
-        value = value.replace(/[\.,;:!?]+$/g, "");
-        return value.trim();
-      }
-
-      async function closeRoomAsAdmin() {
-        if (!currentRoomId || !currentPlayerId) return;
-        try {
-          const resp = await app.queryOnce({ rooms: {}, players: {} });
-          const room = (resp.data.rooms || []).find((r) => r.id === currentRoomId);
-          const me = (resp.data.players || []).find((p) => p.id === currentPlayerId);
-          if (!room || !me?.isAdmin) return;
-          let tx = app.tx.rooms[currentRoomId].delete();
-          for (const p of (resp.data.players || []).filter((x) => x.roomId === currentRoomId)) tx = tx.players[p.id].delete();
-          await app.transact(tx);
-          showMessage(ui.homeMsg, "Sala cerrada.", false);
-          resetToHome();
-        } catch {
-          try { await app.transact(app.tx.rooms[currentRoomId].update({ status: "closed" })); resetToHome(); } catch { alert("No se pudo cerrar la sala."); }
-        }
-      }
-
-      function openLobby() { ui.home.classList.add("hidden"); ui.flow.classList.add("hidden"); ui.lobby.classList.remove("hidden"); }
-
-      function renderLobby(room, players, phrases) {
-        const me = players.find((p) => p.clientId === clientId || p.id === currentPlayerId);
-        if (!me) return;
-        const iAmAdmin = Boolean(me.isAdmin);
-        const canStart = canAdminStartGame(players);
-
-        ui.lobbyRoomName.textContent = `Sala: ${room.name}`;
-        ui.lobbyMeta.textContent = `${players.length} jugador(es) en lobby`;
-        ui.adminActions.classList.toggle("hidden", !iAmAdmin);
-        ui.btnStartGame.disabled = !canStart;
-
-        renderMyPhraseStage(me, phrases);
-
-        ui.playersList.innerHTML = players.sort((a, b) => a.joinedAt - b.joinedAt).map((p) => {
-          const adminTag = p.isAdmin ? `<span class="tag">Admin</span>` : "";
-          const meTag = p.clientId === clientId ? `<span class="tag">Vos</span>` : "";
-          const readyClass = p.status === "ready" ? "ready-player" : "";
-          return `<li class="${readyClass}"><strong>${escapeHtml(p.name)}</strong> ${adminTag} ${meTag}<div class="status">Estado: ${p.status}</div></li>`;
-        }).join("");
-      }
-
-      function renderMyPhraseStage(me, phrases) {
-        const myPhrases = phrases.filter((ph) => ph.originalAuthorId === me.id);
-        if (me.status === "ready" || myPhrases.length >= 8) {
-          ui.myPhrasesBox.innerHTML = `<div class="muted-box">Frases cargadas. Esperando al resto…</div>`;
-          return;
-        }
-
-        const inputs = Array.from({ length: 8 }).map((_, idx) => `<div class="row"><label>Frase ${idx + 1}</label><input class="phrase-input" maxlength="180" /></div>`).join("");
-        ui.myPhrasesBox.innerHTML = `<h3>Cargá tus 8 frases</h3><p>No se muestran al resto.</p>${inputs}<button id="btnSavePhrases" class="success">Guardar frases</button><div id="phrasesMsg" class="hidden"></div>`;
-        document.getElementById("btnSavePhrases").onclick = savePlayerPhrases;
-      }
-
-      async function createLog(roomId, message) {
-        try { await app.transact(app.tx.logs[id()].update({ roomId, message, createdAt: Date.now(), visibility: "public" })); } catch {}
-      }
-
-      function resetToHome() { currentRoomId = null; currentPlayerId = null; ui.flow.classList.add("hidden"); ui.lobby.classList.add("hidden"); ui.home.classList.remove("hidden"); }
-      function getOrCreateClientId() { let x = localStorage.getItem(CLIENT_ID_KEY); if (!x) { x = crypto.randomUUID(); localStorage.setItem(CLIENT_ID_KEY, x); } return x; }
-      function norm(text) { return (text || "").trim().toLowerCase(); }
-      function readInput(idName) { return document.getElementById(idName).value.trim(); }
-      function showMessage(el, text, isError) { el.classList.remove("hidden", "error", "ok"); el.classList.add(isError ? "error" : "ok"); el.textContent = text; }
-      function escapeHtml(text) { return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
-    </script>
-  </body>
-</html>
+function showCreateRoomFlow(){ui.home.classList.add("hidden");ui.game.classList.add("hidden");ui.lobby.classList.add("hidden");ui.flow.classList.remove("hidden"); ui.flow.innerHTML=`<h2>Crear sala</h2><div class="row"><label>Nombre de sala</label><input id="roomName" class="input" maxlength="30"></div><div class="row"><label>Contraseña</label><input id="roomPass" class="input" type="password" maxlength="30"></div><div class="row"><label>Tu nombre de jugador</label><input id="playerName" class="input" maxlength="24"></div><button id="submitCreate" class="success">Crear y entrar</button><button id="cancelFlow" class="secondary">Cancelar</button><div id="flowMsg" class="hidden"></div>`; submitCreate.onclick=createRoomAndAdmin; cancelFlow.onclick=resetToHome;}
+function showJoinRoomFlow(){ui.home.classList.add("hidden");ui.game.classList.add("hidden");ui.lobby.classList.add("hidden");ui.flow.classList.remove("hidden"); ui.flow.innerHTML=`<h2>Unirse a sala</h2><div class="row"><label>Nombre de sala</label><input id="roomName" class="input" maxlength="30"></div><div class="row"><label>Contraseña</label><input id="roomPass" class="input" type="password" maxlength="30"></div><div class="row"><label>Tu nombre de jugador</label><input id="playerName" class="input" maxlength="24"></div><button id="submitJoin" class="success">Entrar</button><button id="cancelFlow" class="secondary">Cancelar</button><div id="flowMsg" class="hidden"></div>`; submitJoin.onclick=joinRoom; cancelFlow.onclick=resetToHome;}
+async function createRoomAndAdmin(){const roomName=readInput("roomName"),password=readInput("roomPass"),playerName=readInput("playerName"),msg=flowMsg; if(!roomName||!password||!playerName)return showMessage(msg,"Completá todos los campos.",true); const roomId=id(),playerId=id(),now=Date.now(); const tx=app.tx.rooms[roomId].update({name:roomName,nameNorm:norm(roomName),password,status:"lobby",createdAt:now,adminPlayerId:playerId}).players[playerId].update({roomId,name:playerName,nameNorm:norm(playerName),isAdmin:true,status:"naming",joinedAt:now,points:0,swapsLeft:2,clientId}); await app.transact(tx); await createLog(roomId,`${playerName} se unió a la sala`); currentRoomId=roomId;currentPlayerId=playerId;openLobby();}
+async function joinRoom(){const roomName=readInput("roomName"),password=readInput("roomPass"),playerName=readInput("playerName"),msg=flowMsg; if(!roomName||!password||!playerName)return showMessage(msg,"Completá todos los campos.",true); const resp=await app.queryOnce({rooms:{},players:{}}),rooms=resp.data.rooms||[],players=resp.data.players||[]; const room=rooms.find(r=>r.nameNorm===norm(roomName)&&r.status!=="closed"); if(!room)return showMessage(msg,"Sala no encontrada.",true); if(room.password!==password)return showMessage(msg,"Contraseña incorrecta.",true); if(players.some(p=>p.roomId===room.id&&p.nameNorm===norm(playerName)&&p.status!=="left"&&p.status!=="kicked"))return showMessage(msg,"Ese nombre ya está en uso.",true); const playerId=id(); await app.transact(app.tx.players[playerId].update({roomId:room.id,name:playerName,nameNorm:norm(playerName),isAdmin:false,status:"naming",joinedAt:Date.now(),points:0,swapsLeft:2,clientId})); await createLog(room.id,`${playerName} se unió a la sala`); currentRoomId=room.id;currentPlayerId=playerId;openLobby();}
+function validatePhraseInputs(raw,existing){const local=new Set(); for(let i=0;i<raw.length;i++){const n=normalizePhrase(raw[i]); if(!n)return{ok:false,error:`La frase ${i+1} está vacía.`}; if(local.has(n))return{ok:false,error:`La frase ${i+1} está repetida en tu lista.`}; if(existing.has(n))return{ok:false,error:`La frase ${i+1} ya existe en la sala.`}; local.add(n);} return{ok:true};}
+async function savePlayerPhrases(){const formMsg=document.getElementById("phrasesMsg"),inputs=[...document.querySelectorAll(".phrase-input")].map(e=>e.value||""); const resp=await app.queryOnce({players:{},phrases:{}}); const me=(resp.data.players||[]).find(p=>p.id===currentPlayerId||p.clientId===clientId); if(!me)return showMessage(formMsg,"No se pudo identificar tu jugador.",true); const existing=new Set((resp.data.phrases||[]).filter(ph=>ph.roomId===currentRoomId).map(ph=>ph.textNorm)); const val=validatePhraseInputs(inputs,existing); if(!val.ok)return showMessage(formMsg,val.error,true); let tx=app.tx.players[me.id].update({status:"ready"}); const now=Date.now(); for(const text of inputs){const phraseId=id(),authorId=id(); tx=tx.phrases[phraseId].update({roomId:currentRoomId,text:text.trim(),textNorm:normalizePhrase(text),originalAuthorId:me.id,currentOwnerId:null,visibility:"unassigned",status:"available",source:"player_setup",createdByPlayerId:me.id,createdAt:now}).phraseAuthors[authorId].update({roomId:currentRoomId,phraseId,playerId:me.id,authorType:"original",createdAt:now,active:true});} await app.transact(tx); await createLog(currentRoomId,`${me.name} cargó sus frases`); showMessage(formMsg,"Frases guardadas correctamente.",false);}
+function canAdminStartGame(players){const act=players.filter(p=>p.status!=="left"&&p.status!=="kicked"); return act.length>=3&&act.every(p=>p.status==="ready");}
+function shuffleArray(array){const arr=[...array]; for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr;}
+async function dealPhrases(roomId){const resp=await app.queryOnce({players:{},phrases:{},phraseAuthors:{}}); const players=(resp.data.players||[]).filter(p=>p.roomId===roomId&&p.status!=="left"&&p.status!=="kicked"); const phrases=shuffleArray((resp.data.phrases||[]).filter(ph=>ph.roomId===roomId&&ph.source==="player_setup")); const authors=(resp.data.phraseAuthors||[]).filter(a=>a.roomId===roomId&&a.active); const need=players.length*8; if(phrases.length<need) throw new Error("No hay frases suficientes para repartir");
+const assigned=new Set(); const updates=[];
+for(const player of players){const owned=[]; for(const phrase of phrases){if(owned.length===8)break; if(assigned.has(phrase.id))continue; const authored=authors.some(a=>a.phraseId===phrase.id&&a.playerId===player.id&&a.active); if(authored||phrase.originalAuthorId===player.id)continue; owned.push(phrase); assigned.add(phrase.id);} if(owned.length<8) throw new Error(`Reparto imposible para ${player.name}`); owned.forEach((ph,idx)=>updates.push({phraseId:ph.id,playerId:player.id,visibility:idx<4?"visible":"hidden"}));}
+if(updates.length!==need) throw new Error("Asignación incompleta"); return {players,updates};}
+async function startGame(roomId){if(!roomId)return; try{const {players,updates}=await dealPhrases(roomId); let tx=app.tx.rooms[roomId].update({status:"playing"}); for(const p of players) tx=tx.players[p.id].update({status:"playing"}); for(const u of updates) tx=tx.phrases[u.phraseId].update({currentOwnerId:u.playerId,visibility:u.visibility,status:"available"}); await app.transact(tx); await createLog(roomId,"Partida iniciada"); await createLog(roomId,"Se repartieron las frases");}catch(e){console.error("No se pudo iniciar la partida:",e);}}
+function getVisiblePhrases(playerId,phrases){return phrases.filter(ph=>ph.currentOwnerId===playerId&&ph.visibility==="visible"&&ph.status==="available");}
+async function closeRoomAsAdmin(){if(!currentRoomId||!currentPlayerId)return; const resp=await app.queryOnce({rooms:{},players:{}}); const me=(resp.data.players||[]).find(p=>p.id===currentPlayerId); if(!me?.isAdmin)return; let tx=app.tx.rooms[currentRoomId].delete(); for(const p of (resp.data.players||[]).filter(x=>x.roomId===currentRoomId)) tx=tx.players[p.id].delete(); await app.transact(tx); showMessage(ui.homeMsg,"Sala cerrada.",false); resetToHome();}
+function openLobby(){ui.home.classList.add("hidden");ui.flow.classList.add("hidden");ui.game.classList.add("hidden");ui.lobby.classList.remove("hidden");}
+function renderLobby(room,players,phrases){const me=players.find(p=>p.clientId===clientId||p.id===currentPlayerId); if(!me)return; ui.lobbyRoomName.textContent=`Sala: ${room.name}`; ui.lobbyMeta.textContent=`${players.length} jugador(es) en lobby`; ui.adminActions.classList.toggle("hidden",!me.isAdmin); ui.btnStartGame.disabled=!canAdminStartGame(players); renderMyPhraseStage(me,phrases); ui.playersList.innerHTML=players.sort((a,b)=>a.joinedAt-b.joinedAt).map(p=>`<li class="${p.status==="ready"?"ready-player":""}"><strong>${escapeHtml(p.name)}</strong>${p.isAdmin?'<span class="tag">Admin</span>':''}${p.clientId===clientId?'<span class="tag">Vos</span>':''}<div class="status">Estado: ${p.status}</div></li>`).join("");}
+function renderGame(room,players,phrases,logs){ui.home.classList.add("hidden");ui.flow.classList.add("hidden");ui.lobby.classList.add("hidden");ui.game.classList.remove("hidden"); const me=players.find(p=>p.clientId===clientId||p.id===currentPlayerId); if(!me)return; const visible=getVisiblePhrases(me.id,phrases).slice(0,4); ui.visiblePhrases.innerHTML=visible.map(ph=>`<li><button class="phrase-card" data-text="${escapeHtml(ph.text)}">${escapeHtml(ph.text)}</button></li>`).join("")||"<li class='muted-box'>Sin frases visibles.</li>"; document.querySelectorAll('.phrase-card').forEach(btn=>btn.onclick=()=>copyPhrase(btn.textContent||"")); ui.gamePlayers.innerHTML=players.sort((a,b)=>a.joinedAt-b.joinedAt).map(p=>`<li><strong>${escapeHtml(p.name)}</strong>${p.isAdmin?'<span class="tag">Admin</span>':''}<div class="status">Estado: ${p.status}</div></li>`).join(""); const rec=logs.sort((a,b)=>b.createdAt-a.createdAt).slice(0,5); ui.recentLogs.innerHTML=rec.map(l=>`<li>${escapeHtml(l.message||"Evento")}</li>`).join("");}
+function renderMyPhraseStage(me,phrases){const mine=phrases.filter(ph=>ph.originalAuthorId===me.id); if(me.status==="ready"||mine.length>=8){ui.myPhrasesBox.innerHTML='<div class="muted-box">Frases cargadas. Esperando al resto…</div>';return;} const inputs=Array.from({length:8}).map((_,i)=>`<div class="row"><label>Frase ${i+1}</label><input class="phrase-input" maxlength="180"></div>`).join(""); ui.myPhrasesBox.innerHTML=`<h3>Cargá tus 8 frases</h3><p>No se muestran al resto.</p>${inputs}<button id="btnSavePhrases" class="success">Guardar frases</button><div id="phrasesMsg" class="hidden"></div>`; document.getElementById("btnSavePhrases").onclick=savePlayerPhrases;}
+async function copyPhrase(text){try{await navigator.clipboard.writeText(text);showMessage(ui.copyMsg,"Frase copiada",false);}catch{showMessage(ui.copyMsg,"No se pudo copiar",true);}}
+function normalizePhrase(text){let v=(text||"").trim().toLowerCase(); v=v.normalize("NFD").replace(/[\u0300-\u036f]/g,""); v=v.replace(/^['"“”‘’]+/,"").replace(/['"“”‘’]+$/,""); v=v.replace(/[\.,;:!?]+$/g,""); return v.trim();}
+async function createLog(roomId,message){try{await app.transact(app.tx.logs[id()].update({roomId,message,createdAt:Date.now(),visibility:"public"}));}catch{}}
+function resetToHome(){currentRoomId=null;currentPlayerId=null;ui.flow.classList.add("hidden");ui.lobby.classList.add("hidden");ui.game.classList.add("hidden");ui.home.classList.remove("hidden");}
+function getOrCreateClientId(){let x=localStorage.getItem(CLIENT_ID_KEY); if(!x){x=crypto.randomUUID();localStorage.setItem(CLIENT_ID_KEY,x);} return x;}
+const norm=(t)=> (t||"").trim().toLowerCase(); const readInput=(id)=>document.getElementById(id).value.trim();
+function showMessage(el,text,isError){el.classList.remove("hidden","error","ok");el.classList.add(isError?"error":"ok");el.textContent=text;}
+function escapeHtml(text){return String(text).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
+</script></body></html>
