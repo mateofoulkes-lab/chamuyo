@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Chamuyo - Prototipo</title>
+<title>Chamuyo - Prototipo v5</title>
 <style>
 :root{--bg:#0f172a;--panel:#111827;--panel-soft:#1f2937;--text:#f8fafc;--muted:#cbd5e1;--accent:#22c55e;--danger:#ef4444;--border:#334155}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(180deg,#0b1022 0%,var(--bg) 100%);color:var(--text);min-height:100vh}
@@ -27,7 +27,7 @@ button.secondary{background:#374151}button.success{background:var(--accent);colo
 <div id="phraseMenu" class="card hidden" style="position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(92vw,420px);z-index:30"><div id="phraseMenuText" class="muted-box"></div><div class="stack" style="margin-top:8px"><button id="btnSaid" class="success">La dije</button><button id="btnSwap" class="secondary">Intercambiarla</button><button id="btnRemoveWithPoints" class="secondary">Eliminar con 2 puntos</button><button id="btnCloseMenu" class="danger">Cerrar</button></div><div id="menuMsg" class="hidden"></div></div><div id="userMenu" class="card hidden" style="position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(92vw,420px);z-index:31"><div id="userMenuTitle" class="muted-box"></div><div class="stack" style="margin-top:8px"><button id="btnChallenge" class="success">Denunciar chamuyo</button><button id="btnKickUser" class="secondary">Echar usuario</button><button id="btnCloseUserMenu" class="danger">Cerrar</button></div></div><div id="challengeModal" class="card hidden" style="position:fixed;inset:auto 12px 12px 12px;z-index:32;max-width:680px;margin:0 auto"><h3>¿Qué frase querés denunciar?</h3><textarea id="challengeInput" class="input" rows="3"></textarea><div class="stack"><button id="btnConfirmChallenge" class="success">Confirmar denuncia</button><button id="btnCancelChallenge" class="secondary">Cancelar</button><div id="challengeMsg" class="hidden"></div></div></div></main>
 <script type="module">
 import { init, id } from "https://esm.sh/@instantdb/core";
-const APP_ID="REEMPLAZAR_CON_TU_APP_ID"; const db=init({appId:APP_ID}); const CLIENT_ID_KEY="chamuyo_client_id"; const clientId=getOrCreateClientId();
+const APP_ID="7203fb46-2446-462f-b1a2-d6600f527872"; const db=init({appId:APP_ID}); const CLIENT_ID_KEY="chamuyo_client_id"; const clientId=getOrCreateClientId();
 const $=(id)=>document.getElementById(id);
 const ui={
   home:$("home"),flow:$("flow"),lobby:$("lobby"),game:$("game"),finished:$("finished"),
